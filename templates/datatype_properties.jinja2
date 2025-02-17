@@ -1,0 +1,49 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ns: <{{ uri }}>
+PREFIX ns-sh: <{{ uri }}shapes/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX sh: <http://www.w3.org/ns/shacl#> 
+
+construct {
+    ns-sh:{{ class }}Shape sh:property ?shapeUri .
+    ?shapeUri a sh:PropertyShape ;
+    		rdfs:comment ?comment ;
+            sh:path ?property;
+            sh:datatype ?range;
+            sh:severity sh:violation;
+    		sh:message ?message.
+}
+#select * 
+where { 
+    ?property a owl:DatatypeProperty ;
+        rdfs:range ?range.
+    {?property rdfs:domain ns:{{ class }}.}
+    UNION
+    {?property rdfs:domain [owl:unionOf (?other1 ns:{{ class }})].}
+    UNION
+    {?property rdfs:domain [owl:unionOf (ns:{{ class }} ?other2)].}
+    UNION
+    {?property rdfs:domain [owl:unionOf (ns:{{ class }} ?other3 ?another1)].}
+    UNION
+    {?property rdfs:domain [owl:unionOf (?other4 ns:{{ class }} ?another2 )].}
+    UNION
+    {?property rdfs:domain [owl:unionOf (?other5 ?another3 ns:{{ class }})].}    
+    
+    OPTIONAL {?property rdfs:comment ?comment.}
+    BIND( URI(CONCAT("{{ uri }}shapes/",
+                UCASE(SUBSTR(STRAFTER(STR(?property),"{{ uri }}"),1,1)),
+                SUBSTR(STRAFTER(STR(?property),"{{ uri }}"),2)
+            		)
+        	  ) AS ?shapeUri)
+    BIND( STRLANG(CONCAT(
+            STRAFTER(STR(?property),"{{ uri }}"),
+            ": Each simple report safety related event may have ",
+            STRAFTER(STR(?property),"{{ uri }}"),
+            " that is a ",
+            STRAFTER(STR(?range),"http://www.w3.org/2001/XMLSchema#"),
+            ". This error is due to having a value that is not a ",
+            STRAFTER(STR(?range),"http://www.w3.org/2001/XMLSchema#"),
+            "."), "en") AS ?message)
+    FILTER NOT EXISTS {?property owl:deprecated "true"^^xsd:boolean}
+  }

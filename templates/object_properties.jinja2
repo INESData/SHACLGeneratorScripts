@@ -1,0 +1,49 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ns: <{{ uri }}>
+PREFIX ns-sh: <{{ uri }}shapes/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX sh: <http://www.w3.org/ns/shacl#> 
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+construct {
+    ns-sh:{{ class }}Shape sh:property ?shapeUri .
+    ?shapeUri a sh:PropertyShape ;
+    		rdfs:comment ?comment ;
+            sh:path ?property;
+            sh:class ?range;
+            sh:severity sh:violation;
+    		sh:message ?message.
+}
+#select * 
+where { 
+    ?property a owl:ObjectProperty ;
+        rdfs:range ?range.
+    {?property rdfs:domain ns:{{ class }}.}
+    UNION
+    {?property rdfs:domain [owl:unionOf (?other1 ns:{{ class }})].}
+    UNION
+    {?property rdfs:domain [owl:unionOf (ns:{{ class }} ?other2)].}
+    UNION
+    {?property rdfs:domain [owl:unionOf (ns:{{ class }} ?other3 ?another1)].}
+    UNION
+    {?property rdfs:domain [owl:unionOf (?other4 ns:{{ class }} ?another2 )].}
+    UNION
+    {?property rdfs:domain [owl:unionOf (?other5 ?another3 ns:{{ class }})].}   
+        
+    OPTIONAL {?property rdfs:comment ?comment.}
+    BIND( URI(CONCAT("{{ uri }}shapes/",
+                UCASE(SUBSTR(REPLACE(STR(?property), ".*(\\/|#){1}(\\w*)","$2"),1,1)),
+                SUBSTR(REPLACE(STR(?property), ".*(\\/|#){1}(\\w*)","$2"),2)
+            		)
+        	  ) AS ?shapeUri)
+    BIND( STRLANG(CONCAT(
+            REPLACE(STR(?property), ".*(\\/|#){1}(\\w*)","$2"),
+            ": The simple report safety related event has a ",
+            REPLACE(STR(?property), ".*(\\/|#){1}(\\w*)","$2"),
+            " that must be a ",
+            REPLACE(STR(?range), ".*(\\/|#){1}(\\w*)","$2"),
+			"."), "en" ) AS ?message)
+    FILTER(?range != skos:Concept)
+    FILTER NOT EXISTS {?property owl:deprecated "true"^^xsd:boolean}
+  }
