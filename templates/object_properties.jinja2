@@ -1,13 +1,16 @@
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX ns: <{{ uri }}>
-PREFIX ns-sh: <{{ uri }}shapes/>
+PREFIX {{ prefix }}: <{{ uri }}>
+PREFIX {{ prefix }}-sh: <{{ uri }}shapes/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX sh: <http://www.w3.org/ns/shacl#> 
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
 construct {
-    ns-sh:{{ class }}Shape sh:property ?shapeUri .
+    {{ prefix }}-sh:{{ class }}Shape a sh:NodeShape;
+            sh:targetClass {{ prefix }}:{{ class }} .
+
+    {{ prefix }}-sh:{{ class }}Shape sh:property ?shapeUri .
     ?shapeUri a sh:PropertyShape ;
     		rdfs:comment ?comment ;
             sh:path ?property;
@@ -19,17 +22,17 @@ construct {
 where { 
     ?property a owl:ObjectProperty ;
         rdfs:range ?range.
-    {?property rdfs:domain ns:{{ class }}.}
+    {?property rdfs:domain {{ prefix }}:{{ class }}.}
     UNION
-    {?property rdfs:domain [owl:unionOf (?other1 ns:{{ class }})].}
+    {?property rdfs:domain [owl:unionOf (?other1 {{ prefix }}:{{ class }})].}
     UNION
-    {?property rdfs:domain [owl:unionOf (ns:{{ class }} ?other2)].}
+    {?property rdfs:domain [owl:unionOf ({{ prefix }}:{{ class }} ?other2)].}
     UNION
-    {?property rdfs:domain [owl:unionOf (ns:{{ class }} ?other3 ?another1)].}
+    {?property rdfs:domain [owl:unionOf ({{ prefix }}:{{ class }} ?other3 ?another1)].}
     UNION
-    {?property rdfs:domain [owl:unionOf (?other4 ns:{{ class }} ?another2 )].}
+    {?property rdfs:domain [owl:unionOf (?other4 {{ prefix }}:{{ class }} ?another2 )].}
     UNION
-    {?property rdfs:domain [owl:unionOf (?other5 ?another3 ns:{{ class }})].}   
+    {?property rdfs:domain [owl:unionOf (?other5 ?another3 {{ prefix }}:{{ class }})].}   
         
     OPTIONAL {?property rdfs:comment ?comment.}
     BIND( URI(CONCAT("{{ uri }}shapes/",
@@ -39,7 +42,7 @@ where {
         	  ) AS ?shapeUri)
     BIND( STRLANG(CONCAT(
             REPLACE(STR(?property), ".*(\\/|#){1}(\\w*)","$2"),
-            ": The simple report safety related event has a ",
+            ": The {{ class }} has a ",
             REPLACE(STR(?property), ".*(\\/|#){1}(\\w*)","$2"),
             " that must be a ",
             REPLACE(STR(?range), ".*(\\/|#){1}(\\w*)","$2"),
